@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pretty_midi
 
+from pipeline.midi_utils import safe_estimate_tempo
+
 PIANO_LOW = 21
 PIANO_HIGH = 108
 
@@ -55,7 +57,7 @@ def clean_midi(input_midi: Path, output_midi: Path, config: MidiCleanConfig | No
     cfg = config or MidiCleanConfig()
 
     midi = pretty_midi.PrettyMIDI(str(input_midi))
-    tempo = midi.estimate_tempo() or 120.0
+    tempo = safe_estimate_tempo(midi)
     seconds_per_beat = 60.0 / max(tempo, 1.0)
     grid = seconds_per_beat / max(cfg.quantize_subdivision, 1)
     min_note_s = cfg.min_note_ms / 1000.0

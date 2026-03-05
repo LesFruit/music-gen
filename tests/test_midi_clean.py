@@ -34,3 +34,19 @@ def test_clean_midi_applies_v1_rules(tmp_path: Path) -> None:
 
     pitch64 = [n for n in notes if n.pitch == 64]
     assert len(pitch64) == 1
+
+
+def test_clean_midi_handles_single_note_input(tmp_path: Path) -> None:
+    input_mid = tmp_path / "single.mid"
+    output_mid = tmp_path / "single-clean.mid"
+
+    midi = pretty_midi.PrettyMIDI(initial_tempo=120)
+    inst = pretty_midi.Instrument(program=0)
+    inst.notes.append(pretty_midi.Note(velocity=100, pitch=60, start=0.0, end=0.3))
+    midi.instruments.append(inst)
+    midi.write(str(input_mid))
+
+    clean_midi(input_mid, output_mid)
+    cleaned = pretty_midi.PrettyMIDI(str(output_mid))
+    assert len(cleaned.instruments) == 1
+    assert len(cleaned.instruments[0].notes) == 1

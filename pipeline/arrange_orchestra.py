@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pretty_midi
 
+from pipeline.midi_utils import safe_estimate_tempo
+
 MEL_PROGRAM = 40  # Violin
 PAD_PROGRAM = 48  # String Ensemble 1
 BASS_PROGRAM = 42  # Cello
@@ -12,7 +14,7 @@ BASS_PROGRAM = 42  # Cello
 
 def arrange_orchestra(input_midi: Path, output_midi: Path) -> None:
     midi = pretty_midi.PrettyMIDI(str(input_midi))
-    tempo = midi.estimate_tempo() or 120.0
+    tempo = safe_estimate_tempo(midi)
 
     all_notes: list[pretty_midi.Note] = []
     for instrument in midi.instruments:

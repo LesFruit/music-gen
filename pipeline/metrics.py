@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 import pretty_midi
 
+from pipeline.midi_utils import safe_estimate_tempo
+
 SHORT_NOTE_MS_DEFAULT = 80.0
 
 
@@ -35,7 +37,7 @@ def compute_midi_metrics(
     else:
         coverage = 0.0
 
-    tempo = midi.estimate_tempo() or 120.0
+    tempo = safe_estimate_tempo(midi)
 
     onsets = sorted(n.start for n in notes)
     if len(onsets) >= 3:

@@ -4,11 +4,13 @@ from pathlib import Path
 
 import pretty_midi
 
+from pipeline.midi_utils import safe_estimate_tempo
+
 
 def arrange_piano(input_midi: Path, output_midi: Path) -> None:
     midi = pretty_midi.PrettyMIDI(str(input_midi))
 
-    arranged = pretty_midi.PrettyMIDI(initial_tempo=midi.estimate_tempo() or 120.0)
+    arranged = pretty_midi.PrettyMIDI(initial_tempo=safe_estimate_tempo(midi))
     piano = pretty_midi.Instrument(program=0, name="piano")
     for instrument in midi.instruments:
         piano.notes.extend(instrument.notes)
