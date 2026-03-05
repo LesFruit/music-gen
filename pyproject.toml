@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "coverlab"
+version = "0.1.0"
+description = "Audio to piano/orchestral cover pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "numpy>=1.26.0",
+  "pretty_midi>=0.2.10",
+  "pydantic>=2.8.0",
+  "scipy>=1.11.0",
+  "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+transcribe = [
+  "basic-pitch>=0.4.0",
+]
+
+[project.scripts]
+coverctl = "coverctl.__main__:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
+
+[dependency-groups]
+dev = [
+  "black>=24.10.0",
+  "pytest>=8.3.0",
+  "ruff>=0.7.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["coverctl", "api", "worker", "pipeline"]
