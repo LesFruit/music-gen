@@ -1,0 +1,152 @@
+[
+  {
+    "slug": "gurenge",
+    "title": "Gurenge",
+    "anime": "Demon Slayer",
+    "artist": "LiSA",
+    "url": "https://www.youtube.com/watch?v=x1FV6IrjZCY",
+    "duration_s": 90,
+    "tags": "anime, j-rock, powerful, electric guitar, emotional, cinematic",
+    "lyrics_romaji": "Tsuyoku nareru riyuu wo shitta\nBoku wo tsurete susume"
+  },
+  {
+    "slug": "blue-bird",
+    "title": "Blue Bird",
+    "anime": "Naruto Shippuden",
+    "artist": "Ikimonogakari",
+    "url": "https://www.youtube.com/watch?v=KpsJWFuVTdI",
+    "duration_s": 90,
+    "tags": "anime, j-pop, upbeat, hopeful, soaring vocal",
+    "lyrics_romaji": "Habataitara modoranai to itte\nMezashita no wa aoi aoi ano sora"
+  },
+  {
+    "slug": "kaikai-kitan",
+    "title": "Kaikai Kitan",
+    "anime": "Jujutsu Kaisen",
+    "artist": "Eve",
+    "url": "https://www.youtube.com/watch?v=1tk1pqwrOys",
+    "duration_s": 90,
+    "tags": "anime, j-rock, fast-paced, electric guitar, energetic",
+    "lyrics_romaji": "Iin da yo, iin da yo, sore de\nChippoke na yorokobi wo"
+  },
+  {
+    "slug": "unravel",
+    "title": "Unravel",
+    "anime": "Tokyo Ghoul",
+    "artist": "TK from Ling Tosite Sigure",
+    "url": "https://www.youtube.com/watch?v=Fve_lHIPa-I",
+    "duration_s": 90,
+    "tags": "anime, j-rock, emotional, falsetto, intense, progressive",
+    "lyrics_romaji": "Oshiete yo oshiete yo sono shikumi wo\nBoku no naka ni dare ga iru no"
+  },
+  {
+    "slug": "shinzou-wo-sasageyo",
+    "title": "Shinzou wo Sasageyo",
+    "anime": "Attack on Titan S2",
+    "artist": "Linked Horizon",
+    "url": "https://www.youtube.com/watch?v=2YNQYYHT8Uc",
+    "duration_s": 90,
+    "tags": "anime, orchestral, epic, choral, intense, cinematic",
+    "lyrics_romaji": "Sasageyo sasageyo shinzou wo sasageyo"
+  },
+  {
+    "slug": "guren-no-yumiya",
+    "title": "Guren no Yumiya",
+    "anime": "Attack on Titan S1",
+    "artist": "Linked Horizon",
+    "url": "https://www.youtube.com/watch?v=bcN_Wpqzh6Y",
+    "duration_s": 90,
+    "tags": "anime, orchestral, epic, choral, powerful, cinematic",
+    "lyrics_romaji": "Seid ihr das Essen? Nein, wir sind der Jaeger!"
+  },
+  {
+    "slug": "the-rumbling",
+    "title": "The Rumbling",
+    "anime": "Attack on Titan Final",
+    "artist": "SiM",
+    "url": "https://www.youtube.com/watch?v=OBqw818mQ1E",
+    "duration_s": 90,
+    "tags": "anime, metalcore, heavy, aggressive, cinematic",
+    "lyrics_romaji": "Beware, coming for you\nAll I ever wanted to do was do right things"
+  },
+  {
+    "slug": "cruel-angels-thesis",
+    "title": "Cruel Angel's Thesis",
+    "anime": "Neon Genesis Evangelion",
+    "artist": "Yoko Takahashi",
+    "url": "https://www.youtube.com/watch?v=kZPy220iZpE",
+    "duration_s": 90,
+    "tags": "anime, j-pop, classic, synth, upbeat, iconic",
+    "lyrics_romaji": "Zankoku na tenshi no you ni\nShounen yo shinwa ni nare"
+  },
+  {
+    "slug": "again",
+    "title": "Again",
+    "anime": "Fullmetal Alchemist Brotherhood",
+    "artist": "YUI",
+    "url": "https://www.youtube.com/watch?v=FM3aJQzqV90",
+    "duration_s": 90,
+    "tags": "anime, j-rock, emotional, acoustic guitar, female vocal",
+    "lyrics_romaji": "Yume no tsuzuki oikaketeita hazu nano ni\nMagarikunetta hosoi michi hito ni tsumazuku"
+  },
+  {
+    "slug": "silhouette",
+    "title": "Silhouette",
+    "anime": "Naruto Shippuden",
+    "artist": "KANA-BOON",
+    "url": "https://www.youtube.com/watch?v=zVgKnfN9i34",
+    "duration_s": 90,
+    "tags": "anime, j-rock, energetic, catchy, guitar-driven",
+    "lyrics_romaji": "Itsudatte itsudatte itsudatte\nSugu soba ni kimi wa ita kara"
+  },
+  {
+    "slug": "inferno",
+    "title": "Inferno",
+    "anime": "Fire Force",
+    "artist": "Mrs. GREEN APPLE",
+    "url": "https://www.youtube.com/watch?v=wfCcs0vLysk",
+    "duration_s": 90,
+    "tags": "anime, j-pop, upbeat, brass, energetic, fun",
+    "lyrics_romaji": "Kono mama ja mada owarenai"
+  },
+  {
+    "slug": "peace-sign",
+    "title": "Peace Sign",
+    "anime": "My Hero Academia",
+    "artist": "Kenshi Yonezu",
+    "url": "https://www.youtube.com/watch?v=9aJVr5tTTWk",
+    "duration_s": 90,
+    "tags": "anime, j-pop, hopeful, catchy, guitar, uplifting",
+    "lyrics_romaji": "Kimi ga kureta mono ga koko ni aru\nPeace sign"
+  },
+  {
+    "slug": "zankyou-sanka",
+    "title": "Zankyou Sanka",
+    "anime": "Demon Slayer S2",
+    "artist": "Aimer",
+    "url": "https://www.youtube.com/watch?v=tLQLa6lM3Us",
+    "duration_s": 90,
+    "tags": "anime, j-rock, powerful, strings, emotional, cinematic",
+    "lyrics_romaji": "Ushinatta mono wo torimodosu tame ni"
+  },
+  {
+    "slug": "idol",
+    "title": "Idol",
+    "anime": "Oshi no Ko",
+    "artist": "YOASOBI",
+    "url": "https://www.youtube.com/watch?v=ZRtdQ81jPUQ",
+    "duration_s": 90,
+    "tags": "anime, j-pop, dance, synth, catchy, high-energy",
+    "lyrics_romaji": "Tokubetsu ni naru tame nara\nDonna uso demo tsuite miseru"
+  },
+  {
+    "slug": "kick-back",
+    "title": "Kick Back",
+    "anime": "Chainsaw Man",
+    "artist": "Kenshi Yonezu",
+    "url": "https://www.youtube.com/watch?v=M2cckDmNLMI",
+    "duration_s": 90,
+    "tags": "anime, j-rock, funk, groovy, electric guitar, bass-heavy",
+    "lyrics_romaji": "Shiawase ni nari tai\nEfforts, efforts, efforts"
+  }
+]

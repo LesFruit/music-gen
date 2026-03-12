@@ -11,3 +11,12 @@ ruff_cache/
 !data/in/*.wav
 !data/in/*.mp3
 data/out/
+data/suno/
+data/suno-covers/
+data/suno-batches/
+data/anime-covers/
+auto-generated/
+media/
+tools/control-panel/target/
+tools/control-panel/*.toml
+!tools/control-panel/Cargo.toml

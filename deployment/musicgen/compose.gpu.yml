@@ -1,0 +1,19 @@
+services:
+  music-gen-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: music-gen-api
+    environment:
+      MODEL_ID: ${MODEL_ID:-facebook/musicgen-small}
+      DEVICE: ${DEVICE:-cuda}
+      MAX_NEW_TOKENS: ${MAX_NEW_TOKENS:-512}
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./out:/app/out
+      - ./hf-cache:/app/.cache/huggingface
+    restart: unless-stopped
+    # App will use DEVICE=cuda when available and fall back to cpu otherwise.
+    security_opt:
+      - label=disable

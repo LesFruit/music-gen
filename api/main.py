@@ -15,6 +15,18 @@ class CreateJobRequest(BaseModel):
     style: str = "piano"
 
 
+class GenerateRequest(BaseModel):
+    prompt: str
+    max_new_tokens: int = 1000
+    guidance_scale: float = 7.5
+
+
+class GenerateResponse(BaseModel):
+    job_id: str
+    status: str
+    message: str
+
+
 class JobStatus(BaseModel):
     job_id: str
     status: str
@@ -47,3 +59,16 @@ def list_artifacts(job_id: str) -> dict[str, list[str]]:
         raise HTTPException(status_code=404, detail="job output directory not found")
     files = [str(p) for p in sorted(out_dir.glob("*")) if p.is_file()]
     return {"artifacts": files}
+
+
+@app.post("/generate", response_model=GenerateResponse)
+def generate(payload: GenerateRequest) -> GenerateResponse:
+    """Generate music from a text prompt. Compatible with music-platform API."""
+    job_id = str(uuid.uuid4())
+    status = JobStatus(job_id=job_id, status="queued", manifest_path=None)
+    JOBS[job_id] = status
+    return GenerateResponse(
+        job_id=job_id,
+        status="queued",
+        message=f"Music generation job queued for prompt: {payload.prompt[:50]}..."
+    )
