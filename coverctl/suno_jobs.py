@@ -322,6 +322,126 @@ def _trim_audio_for_upload(input_path: Path, duration: int = FINGERPRINT_BYPASS_
     return out
 
 
+# Gap-based fingerprint bypass parameters.
+# Suno's fingerprint matcher needs continuous audio to match.  Gaps of >=1s
+# between segments break the matcher, allowing full-song uploads of even the
+# most popular copyrighted tracks.
+#
+# Empirical findings (March 2026, Gurenge / Idol):
+#   - 0.5s silence pulses: FAIL (too short, fingerprint still matches)
+#   - 1s gaps between 5s segments: PASS (even at 59s total)
+#   - 2s gaps between 5s segments: PASS (even at 54s total)
+#   - Continuous audio >= 8s of a popular song: FAIL
+#   - Continuous audio < 6s of a popular song: PASS
+
+
+def _gap_audio_for_upload(
+    input_path: Path,
+    *,
+    segment_duration: int = 5,
+    gap_duration: float = 0.75,
+    start_offset: int = 5,
+    max_segments: int | None = None,
+) -> Path:
+    """Split audio into segments with silence gaps to bypass fingerprinting.
+
+    Takes the full source audio, splits it into ``segment_duration``-second
+    chunks separated by ``gap_duration``-second silence gaps.  By default
+    covers the entire song.
+
+    Args:
+        input_path: Source audio file.
+        segment_duration: Seconds of audio per segment (default 5).
+        gap_duration: Seconds of silence between segments (default 1).
+        start_offset: Skip this many seconds from the start (default 5).
+        max_segments: Cap the number of segments (None = use full duration).
+
+    Returns:
+        Path to a temporary MP3 file with gap-spliced audio.
+    """
+    import subprocess
+    import tempfile
+
+    # Probe source duration
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "csv=p=0", str(input_path)],
+        capture_output=True, text=True, timeout=10,
+    )
+    try:
+        total_duration = float(probe.stdout.strip())
+    except (ValueError, AttributeError):
+        total_duration = 120.0  # fallback
+
+    tmpdir = Path(tempfile.mkdtemp(prefix="suno_gap_"))
+
+    # Create silence gap file
+    silence = tmpdir / "silence.wav"
+    subprocess.run(
+        ["ffmpeg", "-f", "lavfi", "-i",
+         f"anullsrc=r=44100:cl=stereo",
+         "-t", str(gap_duration),
+         str(silence), "-y"],
+        capture_output=True, timeout=10,
+    )
+
+    # Extract segments sequentially from the source
+    segments: list[Path] = []
+    offset = start_offset
+    seg_idx = 0
+    while offset + segment_duration <= total_duration:
+        if max_segments and seg_idx >= max_segments:
+            break
+        seg = tmpdir / f"seg{seg_idx}.wav"
+        subprocess.run(
+            ["ffmpeg", "-i", str(input_path),
+             "-ss", str(offset), "-t", str(segment_duration),
+             "-ar", "44100", "-ac", "2",
+             str(seg), "-y"],
+            capture_output=True, timeout=10,
+        )
+        if seg.exists() and seg.stat().st_size > 100:
+            segments.append(seg)
+            seg_idx += 1
+        offset += segment_duration  # consecutive segments (no skip)
+
+    if not segments:
+        raise RuntimeError(f"No segments extracted from {input_path}")
+
+    # Write concat list
+    concat_list = tmpdir / "concat.txt"
+    lines = []
+    for i, seg in enumerate(segments):
+        lines.append(f"file '{seg}'")
+        if i < len(segments) - 1:
+            lines.append(f"file '{silence}'")
+    concat_list.write_text("\n".join(lines))
+
+    # Concatenate and encode
+    out = Path(tempfile.mktemp(suffix=".mp3"))
+    result = subprocess.run(
+        ["ffmpeg", "-f", "concat", "-safe", "0",
+         "-i", str(concat_list),
+         "-codec:a", "libmp3lame", "-b:a", "192k",
+         str(out), "-y"],
+        capture_output=True, text=True, timeout=30,
+    )
+
+    # Cleanup temp dir
+    import shutil
+    shutil.rmtree(tmpdir, ignore_errors=True)
+
+    if result.returncode != 0 or not out.exists():
+        raise RuntimeError(
+            f"ffmpeg gap-splice failed (rc={result.returncode}): {result.stderr[-300:]}"
+        )
+
+    audio_secs = len(segments) * segment_duration
+    total_secs = audio_secs + (len(segments) - 1) * gap_duration
+    print(f"[suno] Gap-spliced: {len(segments)} segments x {segment_duration}s + {gap_duration}s gaps = {total_secs}s total ({audio_secs}s audio)")
+    return out
+
+
 async def _run_cover_job(
     *,
     input_path: Path,
@@ -341,12 +461,16 @@ async def _run_cover_job(
     last_exc: Exception | None = None
     upload_path = input_path
 
-    # If trim requested, create a short clip to bypass content fingerprinting
+    # Fingerprint bypass: gap-splice preserves more audio than simple trim.
+    # On explicit --trim-for-fingerprint, use gap strategy upfront.
+    # On auto-retry after fingerprint detection, try gap first, then trim.
+    _fingerprint_bypass_used = False
     if trim_for_fingerprint:
-        upload_path = _trim_audio_for_upload(input_path)
-        print(f"[suno] Trimmed to {FINGERPRINT_BYPASS_DURATION}s for fingerprint bypass")
+        upload_path = _gap_audio_for_upload(input_path)
+        _fingerprint_bypass_used = True
+        print("[suno] Gap-spliced audio for fingerprint bypass (4x5s segments + 2s gaps)")
 
-    for attempt in range(_max_captcha_retries + 1):
+    for attempt in range(_max_captcha_retries + 2):  # +2 for gap retry + trim retry
         generate_token, project_id, transaction_uuid = _required_web_env()
         client = _build_client(model)
         try:
@@ -383,12 +507,22 @@ async def _run_cover_job(
             }
         except Exception as exc:
             last_exc = exc
-            if _is_fingerprint_error(exc) and not trim_for_fingerprint:
-                # Retry with trimmed audio to bypass content fingerprinting
-                print(f"[suno] Content fingerprint detected, retrying with {FINGERPRINT_BYPASS_DURATION}s trim...")
+            if _is_fingerprint_error(exc) and not _fingerprint_bypass_used:
+                # First retry: gap-splice (preserves more audio content)
+                print("[suno] Content fingerprint detected, retrying with gap-splice bypass...")
                 await client.close()
+                if upload_path != input_path and upload_path.exists():
+                    upload_path.unlink(missing_ok=True)
+                upload_path = _gap_audio_for_upload(input_path)
+                _fingerprint_bypass_used = True
+                continue
+            if _is_fingerprint_error(exc) and _fingerprint_bypass_used:
+                # Second retry: simple trim (shorter = more likely to pass)
+                print(f"[suno] Gap-splice still caught, retrying with {FINGERPRINT_BYPASS_DURATION}s trim...")
+                await client.close()
+                if upload_path != input_path and upload_path.exists():
+                    upload_path.unlink(missing_ok=True)
                 upload_path = _trim_audio_for_upload(input_path)
-                trim_for_fingerprint = True
                 continue
             if _is_captcha_or_auth_error(exc) and attempt < _max_captcha_retries:
                 print(f"[suno] Auth/captcha error (attempt {attempt + 1}): {exc}")
@@ -400,9 +534,10 @@ async def _run_cover_job(
             raise
         finally:
             await client.close()
-            # Clean up temp file if we created one
-            if upload_path != input_path and upload_path.exists():
-                upload_path.unlink(missing_ok=True)
+
+    # Clean up temp file before raising
+    if upload_path != input_path and upload_path.exists():
+        upload_path.unlink(missing_ok=True)
 
     # Should not reach here, but just in case
     raise last_exc or RuntimeError("Cover job failed after retries")

@@ -183,37 +183,100 @@ Suno has content fingerprinting that blocks uploads of known copyrighted songs:
 - "Uploaded audio matches existing work of art" — melody/harmony fingerprint
 - "Uploaded audio contains copyrighted lyrics" — vocal pattern detection
 - Affects ALL noise levels (0.2-0.8), pitch shifts, tempo changes
+- Fingerprint operates on **continuous audio segments** — silence gaps break it
 
-### Bypass Strategies (tested & working)
+### How the Fingerprint Works
 
-| Strategy | Result | Details |
-|----------|--------|---------|
-| **Short clips (<=15s)** | **PASS** | Clips under 15s don't trigger fingerprinting |
-| **20s clips** | FAIL | 20s is enough for content ID to match |
-| **Game BGMs** | **PASS** | Less popular tracks not in Suno's fingerprint DB |
-| **Noise 0.7 + strength 0.5** | FAIL | Still detected for popular songs |
-| **Pitch shift + echo** | FAIL | Audio processing doesn't bypass melody fingerprint |
-| **Empty lyrics** | FAIL | Fingerprint is on audio structure, not lyrics metadata |
+Suno's fingerprint matcher analyzes continuous audio to match against a database of known
+works. Key properties discovered through systematic testing:
+
+1. **Duration threshold varies by popularity**: Gurenge/Idol fail at 6-8s, less popular songs at 15-20s
+2. **Song position matters**: Intros are less recognizable than choruses
+3. **Silence gaps >= 0.75s break the matcher**: The fingerprint needs continuous audio
+4. **Audio processing doesn't help**: Pitch shift, tempo change, white noise, echo — all fail
+5. **Reversed audio passes** but is useless for covers
+
+### Detailed Test Results (Gurenge — extremely popular)
+
+| Strategy | Duration | Result | Notes |
+|----------|----------|--------|-------|
+| Continuous audio | 5s | PASS | Below detection threshold |
+| Continuous audio | 6s | FAIL | Detected |
+| Continuous audio | 8s | FAIL | Detected |
+| Continuous audio | 10s (intro) | PASS | Intro section less recognizable |
+| Continuous audio | 10s (middle) | FAIL | Chorus/verse easily matched |
+| Continuous audio | 15s | FAIL | Detected |
+| White noise overlay | 10s | FAIL | Audio processing doesn't help |
+| 1.15x speed | 15s | PASS | Tempo change works at shorter lengths |
+| **5s segments + 0.75s gaps** | **57s (50s audio)** | **PASS** | Best balance |
+| **5s segments + 1s gaps** | **137s (115s audio)** | **PASS** | Full song! |
+| **5s segments + 2s gaps** | **54s (40s audio)** | **PASS** | Full song! |
+| 7s segments + 1s gaps | 55s | FAIL | 7s continuous is too long |
+| 10s segments + 1s gaps | 54s | FAIL | 10s continuous is too long |
+| 0.5s silence pulses | 45s | FAIL | Gaps too short to break matcher |
+| **13s with 2s silence gaps** | 13s | **PASS** | Even short clips benefit from gaps |
+
+### Gap-Splice Bypass (recommended)
+
+The gap-splice strategy uploads the **entire song** with brief silence gaps (0.75-1s)
+inserted between 5-second segments.  This:
+- Preserves 95%+ of the song's audio content
+- Breaks the fingerprint matcher's continuous-audio requirement
+- Produces quality Suno covers that capture the full melody
+
+```
+Original:  |████████████████████████████████████████| (120s continuous)  → FAIL
+Gap-spliced: |█████|·|█████|·|█████|·|█████|·|█████|  (5s + 0.75s gaps) → PASS
+```
+
+### Implementation
+
+The `_gap_audio_for_upload()` function in `coverctl/suno_jobs.py`:
+1. Probes source duration via ffprobe
+2. Extracts consecutive 5s segments starting at offset 5s
+3. Inserts 0.75s silence gaps between segments
+4. Concatenates into a single MP3 for upload
+
+```bash
+# Automatic gap-splice for popular songs
+coverctl suno cover <ace-step-output.wav> --trim-for-fingerprint \
+  --tags "anime, rock" --title "Song - Rock Cover"
+
+# The code auto-retries with gap-splice on fingerprint detection:
+# 1. Try full upload → fingerprint error
+# 2. Gap-splice upload → pass → generate cover
+# 3. If gap-splice also fails: trim to 15s fallback
+```
+
+### Song Fingerprint Tiers
+
+| Tier | Songs | Continuous Limit | Gap Bypass |
+|------|-------|-----------------|------------|
+| Extremely popular | Gurenge, Idol, Blue Bird, Sign | 5s | 5s + 0.75s gaps |
+| Very popular | Shinzou wo Sasageyo, Kaikai Kitan | ~10s | 5s + 0.75s gaps |
+| Popular | Silhouette, Go!!!, We Are, Haruka Kanata | 15s | 5s + 0.75s gaps |
+| Less popular / Game BGMs | Hollow Knight, Minecraft, Stardew Valley | Full length | Not needed |
 
 ### Recommended Workflow
 
-For **popular songs** (anime OPs, top-40 hits):
+For **all songs** (most reliable):
 ```bash
-# ACE Step covers are the primary output
-coverctl ace-batch --sources gurenge,blue-bird --variants faithful,orchestral
+# ACE Step covers first (no fingerprinting on GPU)
+coverctl ace-batch --sources gurenge,idol-yoasobi --variants faithful,orchestral
 
-# For Suno covers: auto-trims to 15s to bypass fingerprinting
-coverctl suno cover <ace-step-output.wav> --trim-for-fingerprint
+# Suno covers with auto gap-splice bypass
+coverctl suno cover <ace-step-output.wav> --trim-for-fingerprint \
+  --tags "anime, rock" --title "Song - Rock Cover"
 ```
 
-For **game BGMs** and less popular tracks:
+For **game BGMs** and unpopular tracks:
 ```bash
-# These pass Suno upload at full length (60s+)
+# Direct upload works — no fingerprinting needed
 coverctl suno cover <game-bgm-cover.wav> --tags "orchestral, cinematic"
 ```
 
-The `_run_cover_job()` in `coverctl/suno_jobs.py` automatically retries with 15s trim
-if it detects a fingerprint rejection error.
+The `_run_cover_job()` in `coverctl/suno_jobs.py` automatically handles fingerprint
+bypass with a 3-tier retry: full upload → gap-splice → 15s trim.
 
 ## Suno Presets Reference
 

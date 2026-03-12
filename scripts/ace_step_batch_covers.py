@@ -166,6 +166,13 @@ SONG_CATALOG: dict[str, dict[str, str]] = {
         "anime": "",
         "artist": "Imagine Dragons",
     },
+    "idol-yoasobi": {
+        "file": "YOASOBI-Idol-official-audio.wav",
+        "tags": "anime, j-pop, energetic, catchy, bright, powerful, idol, fast",
+        "lyrics": "tokubetsu janai kimi janai shinjitsu no uta utau",
+        "anime": "Oshi no Ko",
+        "artist": "YOASOBI",
+    },
     # Game BGMs (instrumental — pass Suno upload at full length)
     "hollow-knight-city-of-tears": {
         "file": "Hollow-Knight-City-of-Tears-BGM.wav",
