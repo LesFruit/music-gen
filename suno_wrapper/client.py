@@ -871,10 +871,19 @@ class SunoClient:
             # Poll until the upload reaches "complete" status before
             # initializing the clip (Suno processes audio server-side).
             for _ in range(30):
-                if meta.get("status") == "complete":
+                status = meta.get("status", "")
+                if status == "complete":
                     break
+                if status == "error":
+                    error_msg = meta.get("error_message") or meta.get("error") or "unknown upload error"
+                    raise SunoError(f"Upload rejected: {error_msg}")
                 await asyncio.sleep(2)
                 meta = await self.get_audio_upload(upload_id)
+            else:
+                # Timed out waiting — check final status
+                if meta.get("status") == "error":
+                    error_msg = meta.get("error_message") or meta.get("error") or "unknown upload error"
+                    raise SunoError(f"Upload rejected: {error_msg}")
             clip_id = await self.initialize_clip(upload_id)
             meta["clip_id"] = clip_id
         return meta

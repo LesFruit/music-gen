@@ -63,6 +63,12 @@ def add_suno_subcommands(subparsers: argparse._SubParsersAction[argparse.Argumen
         default=True,
         help="Convert downloaded clips to WAV",
     )
+    cover.add_argument(
+        "--trim-for-fingerprint",
+        action="store_true",
+        default=False,
+        help="Pre-trim audio to 15s to bypass Suno's content fingerprinting (for popular songs)",
+    )
     cover.set_defaults(func=run_suno_cover)
 
     batch = suno_sub.add_parser("cover-batch", help="Create Suno covers for every file in a folder")
@@ -300,7 +306,7 @@ def _trim_audio_for_upload(input_path: Path, duration: int = FINGERPRINT_BYPASS_
     import tempfile
 
     out = Path(tempfile.mktemp(suffix=".mp3"))
-    subprocess.run(
+    result = subprocess.run(
         [
             "ffmpeg", "-i", str(input_path),
             "-ss", "5",           # skip first 5s (intros are recognizable)
@@ -309,8 +315,10 @@ def _trim_audio_for_upload(input_path: Path, duration: int = FINGERPRINT_BYPASS_
             "-codec:a", "libmp3lame", "-b:a", "192k",
             str(out), "-y",
         ],
-        capture_output=True, timeout=30,
+        capture_output=True, text=True, timeout=30,
     )
+    if result.returncode != 0 or not out.exists():
+        raise RuntimeError(f"ffmpeg trim failed (rc={result.returncode}): {result.stderr[-300:]}")
     return out
 
 
@@ -418,6 +426,7 @@ async def _run_single_cover(args: argparse.Namespace) -> int:
         poll_interval=args.poll_interval,
         pre_download_wait=args.pre_download_wait,
         wav=args.wav,
+        trim_for_fingerprint=getattr(args, "trim_for_fingerprint", False),
     )
     manifest_path = _write_manifest(
         output_dir,
