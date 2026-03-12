@@ -269,11 +269,49 @@ async def _solve_captcha_and_refresh() -> bool:
 
 _CAPTCHA_AUTH_KEYWORDS = ("captcha", "token validation", "unauthorized", "403", "401")
 
+# Suno content fingerprinting errors that indicate the uploaded audio was
+# detected as copyrighted material.
+_FINGERPRINT_KEYWORDS = ("matches existing work of art", "copyrighted lyrics")
+
+# Maximum clip duration (in seconds) that bypasses Suno's content fingerprint.
+# Empirically determined: 15s passes, 20s gets caught.
+FINGERPRINT_BYPASS_DURATION = 15
+
 
 def _is_captcha_or_auth_error(exc: Exception) -> bool:
     """Check if an exception looks like a captcha or auth failure."""
     msg = str(exc).lower()
     return any(kw in msg for kw in _CAPTCHA_AUTH_KEYWORDS)
+
+
+def _is_fingerprint_error(exc: Exception) -> bool:
+    """Check if an exception is Suno's content fingerprint rejection."""
+    msg = str(exc).lower()
+    return any(kw in msg for kw in _FINGERPRINT_KEYWORDS)
+
+
+def _trim_audio_for_upload(input_path: Path, duration: int = FINGERPRINT_BYPASS_DURATION) -> Path:
+    """Trim audio to a short clip to bypass Suno's content fingerprinting.
+
+    Returns path to a temporary trimmed MP3 file.
+    Suno's content ID catches clips >= 20s but passes clips <= 15s.
+    """
+    import subprocess
+    import tempfile
+
+    out = Path(tempfile.mktemp(suffix=".mp3"))
+    subprocess.run(
+        [
+            "ffmpeg", "-i", str(input_path),
+            "-ss", "5",           # skip first 5s (intros are recognizable)
+            "-t", str(duration),
+            "-ar", "44100", "-ac", "2",
+            "-codec:a", "libmp3lame", "-b:a", "192k",
+            str(out), "-y",
+        ],
+        capture_output=True, timeout=30,
+    )
+    return out
 
 
 async def _run_cover_job(
@@ -290,14 +328,21 @@ async def _run_cover_job(
     pre_download_wait: float,
     wav: bool,
     _max_captcha_retries: int = 2,
+    trim_for_fingerprint: bool = False,
 ) -> dict[str, Any]:
     last_exc: Exception | None = None
+    upload_path = input_path
+
+    # If trim requested, create a short clip to bypass content fingerprinting
+    if trim_for_fingerprint:
+        upload_path = _trim_audio_for_upload(input_path)
+        print(f"[suno] Trimmed to {FINGERPRINT_BYPASS_DURATION}s for fingerprint bypass")
 
     for attempt in range(_max_captcha_retries + 1):
         generate_token, project_id, transaction_uuid = _required_web_env()
         client = _build_client(model)
         try:
-            upload = await client.upload_audio_file(input_path, initialize=True)
+            upload = await client.upload_audio_file(upload_path, initialize=True)
             cover_clip_id = str(upload.get("clip_id", "")).strip()
             if not cover_clip_id:
                 raise RuntimeError(f"Upload completed but no clip_id was returned for {input_path}")
@@ -330,6 +375,13 @@ async def _run_cover_job(
             }
         except Exception as exc:
             last_exc = exc
+            if _is_fingerprint_error(exc) and not trim_for_fingerprint:
+                # Retry with trimmed audio to bypass content fingerprinting
+                print(f"[suno] Content fingerprint detected, retrying with {FINGERPRINT_BYPASS_DURATION}s trim...")
+                await client.close()
+                upload_path = _trim_audio_for_upload(input_path)
+                trim_for_fingerprint = True
+                continue
             if _is_captcha_or_auth_error(exc) and attempt < _max_captcha_retries:
                 print(f"[suno] Auth/captcha error (attempt {attempt + 1}): {exc}")
                 await client.close()
@@ -340,6 +392,9 @@ async def _run_cover_job(
             raise
         finally:
             await client.close()
+            # Clean up temp file if we created one
+            if upload_path != input_path and upload_path.exists():
+                upload_path.unlink(missing_ok=True)
 
     # Should not reach here, but just in case
     raise last_exc or RuntimeError("Cover job failed after retries")

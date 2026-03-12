@@ -166,6 +166,46 @@ SONG_CATALOG: dict[str, dict[str, str]] = {
         "anime": "",
         "artist": "Imagine Dragons",
     },
+    # Game BGMs (instrumental — pass Suno upload at full length)
+    "hollow-knight-city-of-tears": {
+        "file": "Hollow-Knight-City-of-Tears-BGM.wav",
+        "tags": "ambient, melancholy, piano, strings, rain, atmospheric, game soundtrack",
+        "lyrics": "",
+        "anime": "Hollow Knight",
+        "artist": "Christopher Larkin",
+        "suno_full_length": True,  # Not in Suno's fingerprint DB
+    },
+    "minecraft-sweden": {
+        "file": "Minecraft-Sweden-C418.wav",
+        "tags": "ambient, piano, peaceful, nostalgic, minimalist, game soundtrack",
+        "lyrics": "",
+        "anime": "Minecraft",
+        "artist": "C418",
+        "suno_full_length": True,
+    },
+    "stardew-valley-spring": {
+        "file": "Stardew-Valley-Spring-Theme.wav",
+        "tags": "folk, acoustic, cheerful, pastoral, country, game soundtrack",
+        "lyrics": "",
+        "anime": "Stardew Valley",
+        "artist": "ConcernedApe",
+        "suno_full_length": True,
+    },
+    "animal-crossing-main": {
+        "file": "Animal-Crossing-Main-Theme.wav",
+        "tags": "cheerful, whimsical, acoustic guitar, playful, cozy, game soundtrack",
+        "lyrics": "",
+        "anime": "Animal Crossing",
+        "artist": "Kazumi Totaka",
+        "suno_full_length": True,
+    },
+    "undertale-megalovania": {
+        "file": "Undertale-Megalovania-Toby-Fox.wav",
+        "tags": "chiptune, rock, intense, energetic, boss battle, game soundtrack",
+        "lyrics": "",
+        "anime": "Undertale",
+        "artist": "Toby Fox",
+    },
 }
 
 

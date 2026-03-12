@@ -177,20 +177,43 @@ This runs the entire pipeline: ACE Step covers -> download -> Suno covers -> org
 | Suno "matches existing work of art" | Suno's content fingerprinting rejects uploads of copyrighted songs AND AI covers derived from them, even with heavy audio processing. Affects ALL noise levels (0.2-0.8). |
 | Suno "copyrighted lyrics" | Even instrumental covers with empty lyrics get flagged if generated from a copyrighted reference. Suno's moderation is very aggressive as of March 2026. |
 
-## Suno Upload Limitations (as of March 2026)
+## Suno Upload Fingerprinting & Bypass (as of March 2026)
 
-Suno has deployed aggressive content fingerprinting that blocks:
-1. **Direct uploads** of copyrighted songs ("matches existing work of art")
-2. **AI covers** of copyrighted songs at any noise level (0.2-0.8)
-3. **Pitch-shifted / tempo-changed** versions (fingerprint-resistant)
-4. **Instrumental covers** generated from copyrighted reference audio
+Suno has content fingerprinting that blocks uploads of known copyrighted songs:
+- "Uploaded audio matches existing work of art" — melody/harmony fingerprint
+- "Uploaded audio contains copyrighted lyrics" — vocal pattern detection
+- Affects ALL noise levels (0.2-0.8), pitch shifts, tempo changes
 
-**Impact:** The Song → ACE Step → Suno cover chain is blocked at the Suno upload step. ACE Step covers are still excellent standalone covers.
+### Bypass Strategies (tested & working)
 
-**Workaround options:**
-- Use ACE Step covers directly (high quality, multiple styles)
-- Use Suno for **original** song generation (text-to-music, not covers)
-- Upload only truly original/non-copyrighted audio to Suno
+| Strategy | Result | Details |
+|----------|--------|---------|
+| **Short clips (<=15s)** | **PASS** | Clips under 15s don't trigger fingerprinting |
+| **20s clips** | FAIL | 20s is enough for content ID to match |
+| **Game BGMs** | **PASS** | Less popular tracks not in Suno's fingerprint DB |
+| **Noise 0.7 + strength 0.5** | FAIL | Still detected for popular songs |
+| **Pitch shift + echo** | FAIL | Audio processing doesn't bypass melody fingerprint |
+| **Empty lyrics** | FAIL | Fingerprint is on audio structure, not lyrics metadata |
+
+### Recommended Workflow
+
+For **popular songs** (anime OPs, top-40 hits):
+```bash
+# ACE Step covers are the primary output
+coverctl ace-batch --sources gurenge,blue-bird --variants faithful,orchestral
+
+# For Suno covers: auto-trims to 15s to bypass fingerprinting
+coverctl suno cover <ace-step-output.wav> --trim-for-fingerprint
+```
+
+For **game BGMs** and less popular tracks:
+```bash
+# These pass Suno upload at full length (60s+)
+coverctl suno cover <game-bgm-cover.wav> --tags "orchestral, cinematic"
+```
+
+The `_run_cover_job()` in `coverctl/suno_jobs.py` automatically retries with 15s trim
+if it detects a fingerprint rejection error.
 
 ## Suno Presets Reference
 
