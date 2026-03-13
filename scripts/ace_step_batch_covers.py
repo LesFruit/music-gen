@@ -71,6 +71,31 @@ VARIANTS: dict[str, dict[str, Any]] = {
         "tags_override": "epic, orchestral, choir, cinematic, powerful, dramatic, battle, triumph",
         "description": "Epic orchestral with choir",
     },
+    "piano": {
+        "noise": 0.4,
+        "tags_override": "piano, solo piano, emotional, intimate, classical, expressive, dynamic",
+        "description": "Solo piano arrangement",
+    },
+    "cinematic": {
+        "noise": 0.45,
+        "tags_override": "cinematic, film score, orchestral, dramatic, strings, brass, percussion, epic, trailer",
+        "description": "Cinematic film score style",
+    },
+    "acoustic": {
+        "noise": 0.4,
+        "tags_override": "acoustic, acoustic guitar, warm, intimate, unplugged, folk, heartfelt",
+        "description": "Acoustic guitar arrangement",
+    },
+    "symphonic-metal": {
+        "noise": 0.5,
+        "tags_override": "symphonic metal, orchestral, electric guitar, heavy drums, powerful, dramatic, choir",
+        "description": "Symphonic metal fusion",
+    },
+    "ambient": {
+        "noise": 0.6,
+        "tags_override": "ambient, atmospheric, ethereal, reverb, pads, dreamy, spacious, slow",
+        "description": "Ambient/atmospheric reimagining (looser interpretation)",
+    },
 }
 
 # Source catalog: slug -> source file on gpu-dev-3 + metadata

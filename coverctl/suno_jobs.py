@@ -464,13 +464,13 @@ async def _run_cover_job(
     # Fingerprint bypass: gap-splice preserves more audio than simple trim.
     # On explicit --trim-for-fingerprint, use gap strategy upfront.
     # On auto-retry after fingerprint detection, try gap first, then trim.
-    _fingerprint_bypass_used = False
+    _fingerprint_bypass_used: bool | str = False
     if trim_for_fingerprint:
         upload_path = _gap_audio_for_upload(input_path)
         _fingerprint_bypass_used = True
-        print("[suno] Gap-spliced audio for fingerprint bypass (4x5s segments + 2s gaps)")
+        print("[suno] Gap-spliced audio for fingerprint bypass")
 
-    for attempt in range(_max_captcha_retries + 2):  # +2 for gap retry + trim retry
+    for attempt in range(_max_captcha_retries + 3):  # +3 for gap retry + aggressive gap + trim retry
         generate_token, project_id, transaction_uuid = _required_web_env()
         client = _build_client(model)
         try:
@@ -507,23 +507,33 @@ async def _run_cover_job(
             }
         except Exception as exc:
             last_exc = exc
-            if _is_fingerprint_error(exc) and not _fingerprint_bypass_used:
-                # First retry: gap-splice (preserves more audio content)
-                print("[suno] Content fingerprint detected, retrying with gap-splice bypass...")
+            if _is_fingerprint_error(exc):
                 await client.close()
                 if upload_path != input_path and upload_path.exists():
                     upload_path.unlink(missing_ok=True)
-                upload_path = _gap_audio_for_upload(input_path)
-                _fingerprint_bypass_used = True
-                continue
-            if _is_fingerprint_error(exc) and _fingerprint_bypass_used:
-                # Second retry: simple trim (shorter = more likely to pass)
-                print(f"[suno] Gap-splice still caught, retrying with {FINGERPRINT_BYPASS_DURATION}s trim...")
-                await client.close()
-                if upload_path != input_path and upload_path.exists():
-                    upload_path.unlink(missing_ok=True)
-                upload_path = _trim_audio_for_upload(input_path)
-                continue
+                if _fingerprint_bypass_used == "aggressive":
+                    # Third retry: simple trim (shortest = most likely to pass)
+                    print(f"[suno] Aggressive gap-splice still caught, retrying with {FINGERPRINT_BYPASS_DURATION}s trim...")
+                    upload_path = _trim_audio_for_upload(input_path)
+                    _fingerprint_bypass_used = "trim"
+                    continue
+                elif _fingerprint_bypass_used == "trim":
+                    # All bypass strategies exhausted
+                    raise
+                elif _fingerprint_bypass_used:
+                    # Second retry: shorter segments (4s) with longer gaps (1.5s)
+                    print("[suno] Gap-splice still caught, retrying with 4s segments + 1.5s gaps...")
+                    upload_path = _gap_audio_for_upload(
+                        input_path, segment_duration=4, gap_duration=1.5
+                    )
+                    _fingerprint_bypass_used = "aggressive"
+                    continue
+                else:
+                    # First retry: gap-splice (preserves more audio content)
+                    print("[suno] Content fingerprint detected, retrying with gap-splice bypass...")
+                    upload_path = _gap_audio_for_upload(input_path)
+                    _fingerprint_bypass_used = True
+                    continue
             if _is_captcha_or_auth_error(exc) and attempt < _max_captcha_retries:
                 print(f"[suno] Auth/captcha error (attempt {attempt + 1}): {exc}")
                 await client.close()
