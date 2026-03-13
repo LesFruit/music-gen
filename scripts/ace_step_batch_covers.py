@@ -173,6 +173,49 @@ SONG_CATALOG: dict[str, dict[str, str]] = {
         "anime": "Oshi no Ko",
         "artist": "YOASOBI",
     },
+    # Demon Slayer extended catalog
+    "zankyou-sanka": {
+        "file": "zankyou-sanka.wav",
+        "tags": "anime, j-pop, emotional, powerful, soaring vocal, dramatic, Aimer",
+        "lyrics": "todokanai todokanainda kono koe wa",
+        "anime": "Demon Slayer S2",
+        "artist": "Aimer",
+    },
+    "homura": {
+        "file": "homura-lisa.wav",
+        "tags": "anime, j-pop, emotional, ballad, powerful, dramatic, cinematic, LiSA",
+        "lyrics": "sayonara arigato koe no kagiri sakende",
+        "anime": "Demon Slayer: Mugen Train",
+        "artist": "LiSA",
+    },
+    "akeboshi": {
+        "file": "akeboshi.wav",
+        "tags": "anime, j-rock, energetic, upbeat, punk rock, fast, powerful, 10-FEET",
+        "lyrics": "hikari wo motomete hashiru akeboshi",
+        "anime": "Demon Slayer S3",
+        "artist": "10-FEET",
+    },
+    "from-the-edge": {
+        "file": "from-the-edge.wav",
+        "tags": "anime, j-pop, emotional, dramatic, strings, powerful, FictionJunction",
+        "lyrics": "kono te nobashite hikari motometa",
+        "anime": "Demon Slayer S1 ED",
+        "artist": "FictionJunction feat. LiSA",
+    },
+    "kizuna-no-kiseki": {
+        "file": "kizuna-no-kiseki.wav",
+        "tags": "anime, j-rock, powerful, emotional, dramatic, epic, duo vocal",
+        "lyrics": "tsuyoku nareru riyuu wo shitta boku wo tsurete susume",
+        "anime": "Demon Slayer S3 ED",
+        "artist": "MAN WITH A MISSION x milet",
+    },
+    "shirogane": {
+        "file": "shirogane.wav",
+        "tags": "anime, j-rock, intense, powerful, emotional, dramatic, MY FIRST STORY",
+        "lyrics": "shirogane no yoru ni kirameku",
+        "anime": "Demon Slayer S4",
+        "artist": "MY FIRST STORY",
+    },
     # Game BGMs (instrumental — pass Suno upload at full length)
     "hollow-knight-city-of-tears": {
         "file": "Hollow-Knight-City-of-Tears-BGM.wav",
